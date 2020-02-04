@@ -21,7 +21,7 @@ class ActionMessage(DefaultMunch):
         })
 
     def __repr__(self):
-        return f'\t{self.get_type()} {self.action}: {self.message}'
+        return f'{self.get_type()} {self.action}: {self.message}'
 
     def get_type(self):
         return "[i]"
@@ -48,6 +48,8 @@ class Project:
         self.repo = None
         self.remote = remote
         self.branch = branch
+        self.remote_valid = False
+        self.branch_valid = False
         self.commits_ahead = []
         self.commits_behind = []
         self.dry_run_mode = dry_run_mode
@@ -77,11 +79,11 @@ class Project:
             return None
 
     @staticmethod
-    def create_project(root, dirs: list, files: list, dry_run: bool = False) -> [dict, None]:
+    def create_project(root, dirs: list, files: list, branch: str, remote: str, dry_run: bool = False) -> [dict, None]:
         if "package.json" in files:
             ob = Project.load_npm_package(os.path.join(root, "package.json"))
             if ob:
-                return Project(ob, root, dirs, files, remote="nexus", branch="master", dry_run_mode=dry_run)
+                return Project(ob, root, dirs, files, remote=remote, branch=branch, dry_run_mode=dry_run)
 
         return None
 
@@ -93,11 +95,29 @@ class Project:
             self.repo = Repo(self.root_directory)
 
         if self.repo:
-            self.commits_behind = [c for c in self.repo.iter_commits(f'{self.branch}..{self.remote}/{self.branch}')]
-            self.commits_ahead = [c for c in self.repo.iter_commits(f'{self.remote}/{self.branch}..{self.branch}')]
+            self.branch_valid = self.has_branch(self.branch)
+            self.remote_valid = self.has_remote(self.remote)
+
+            if self.branch_valid and self.remote_valid:
+                self.commits_behind = [c for c in self.repo.iter_commits(f'{self.branch}..{self.remote}/{self.branch}')]
+                self.commits_ahead = [c for c in self.repo.iter_commits(f'{self.remote}/{self.branch}..{self.branch}')]
 
     def is_dirty(self) -> bool:
         return self.repo.is_dirty()
+
+    def has_branch(self, branch_name):
+        for b in self.repo.branches:
+            if b.name == branch_name:
+                return True
+
+        return False
+
+    def has_remote(self, remote_name):
+        for r in self.repo.remotes:
+            if r.name == remote_name:
+                return True
+
+        return False
 
     def get_name(self, without_scope=False):
         n: str = self.package_ob['name']
@@ -179,6 +199,11 @@ class Project:
         return len(self.commits_behind) > 0
 
     def pull(self):
+        if not self.branch_valid:
+            return ActionResult("pull", f"Unable to pull because branch {self.branch} could not be found", False)
+        if not self.remote_valid:
+            return ActionResult("pull", f"Unable to pull because remote {self.remote} could not be found", False)
+
         try:
             if self.commits_behind > 0:
                 if not self.commits_ahead:
@@ -189,6 +214,28 @@ class Project:
                 return ActionResult("pull", "Nothing to do", True)
         except GitCommandError as e:
             return ActionResult(action="pull", message=str(e), success=False)
+
+    def link_global(self):
+        params = ["npm", "link"]
+        stdout, stderr, returncode = self._run_command(params)
+
+        if returncode == 0:
+            return ActionResult("link_global", "Local npm repo now points to local package", True)
+        else:
+            return ActionResult("link_global", f"Failed with errorcode {returncode}: {stderr}", False)
+
+    def link(self, to) -> ActionResult:
+        params = ["npm", "link", to.package_ob.name]
+        if self.dry_run_mode:
+            params.append("--dry-run")
+
+        stdout, stderr, returncode = self._run_command(params)
+
+        if returncode == 0:
+            return ActionResult("link", "Local npm repo now points to local package", True)
+        else:
+            return ActionResult("link", f"Failed with errorcode {returncode}", False)
+
 
     def commit(self, message: str) -> ActionResult:
 
@@ -240,16 +287,20 @@ class Project:
             return ActionResult(action="reset", message=str(e), success=False)
 
     def _run_command(self, command_array) -> (str, str):
-        p = subprocess.Popen(command_array, cwd=self.root_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        click.echo(os.environ['PATH'])
+        p = subprocess.Popen(command_array, cwd=self.root_directory,
+                             stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         stdout, stderr = p.communicate()
         return stdout, stderr, p.returncode
 
 
 class ProjectManager:
 
-    def __init__(self, root_directory: str, dry_run: bool = False):
+    def __init__(self, root_directory: str, branch: str, remote: str, dry_run: bool = False):
         self.root_directory: str = root_directory
         self.projects: List[Project] = []
+        self.branch = branch
+        self.remote = remote
         projects_loaded = self._load_projects(dry_run)
 
     def _load_projects(self, dry_run: bool = False) -> int:
@@ -261,7 +312,7 @@ class ProjectManager:
                 dirs.clear()
 
                 # now try and create a nexus project object.  This will fail if it's not a nexus project.
-                proj = Project.create_project(subdir, dirs, files, dry_run)
+                proj = Project.create_project(subdir, dirs, files, self.branch, self.remote, dry_run)
                 if proj:
                     self.projects.append(proj)
 

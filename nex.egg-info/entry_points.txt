@@ -1,4 +1,0 @@
-
-        [console_scripts]
-        nex=src.main:cli
-    
