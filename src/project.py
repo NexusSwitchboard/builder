@@ -13,19 +13,27 @@ keywords: Set[str] = {"nexus-module", "nexus-connection"}
 names: List[str] = ["nexus-core", "nexus-extend"]
 
 
-class ActionResult(DefaultMunch):
-    def __init__(self, action, message, success):
-        super(ActionResult, self).__init__(None, {
+class ActionMessage(DefaultMunch):
+    def __init__(self, action, message):
+        super(ActionMessage, self).__init__(None, {
             "action": action,
-            "message": message,
-            "success": success
+            "message": message
         })
 
     def __repr__(self):
-        if self.success:
-            return f'\t[c] {self.action}: {self.message}'
-        else:
-            return f'\t[e] {self.action}: {self.message}'
+        return f'\t{self.get_type()} {self.action}: {self.message}'
+
+    def get_type(self):
+        return "[i]"
+
+
+class ActionResult(ActionMessage):
+    def __init__(self, action, message, success):
+        super(ActionResult, self).__init__(action,message)
+        self.success = success
+
+    def get_type(self):
+        return "[c]" if self.success else "[e]" if self.success is False else "[w]"
 
 
 class Project:
@@ -52,7 +60,8 @@ class Project:
         if pm.keywords and len(set(pm.keywords).intersection(keywords)) > 0:
             return True
         else:
-            return pm.name in names
+            # Return true if the approved names are anywhere in the package name.
+            return len([p for p in names if pm.name.find(p) > -1]) > 0
 
     @staticmethod
     def load_npm_package(file: str) -> [dict, None]:
@@ -62,7 +71,8 @@ class Project:
                 package_ob = json.load(fp)
                 return package_ob if Project.is_nexus_project(package_ob) else None
         except JSONDecodeError as e:
-            click.echo(f'\t[e] Unable to process {file} because it has a JSON formatting error')
+            click.echo(repr(ActionResult("read_package_json",
+                                         f'Unable to process {file} because it has a JSON formatting error', False)))
         except FileNotFoundError as e:
             return None
 
@@ -117,7 +127,7 @@ class Project:
 
         params = ["npm", "version", type_]
         if self.dry_run_mode:
-            click.echo("\t[w] There is no way to dry run the npm version command")
+            click.echo(repr(ActionResult("version", "There is no way to dry run the npm version command", None)))
 
         stdout, stderr, returncode = self._run_command(params)
 
@@ -125,21 +135,42 @@ class Project:
             return ActionResult("increment_version", stdout or "Completed successfully", True)
         else:
             logging.error(stderr)
-            return ActionResult("increment_version", f"Failed with return code {returncode}" , False)
+            return ActionResult("increment_version", f"Failed with return code {returncode}", False)
 
     def publish(self) -> ActionResult:
 
-        params = ["npm", "publish"]
+        click.echo(repr(ActionMessage("publish", "Running npm install first on projects to be published")))
+
+        result = self.update()
+        if result.success:
+            click.echo(repr(result))
+
+            params = ["npm", "publish"]
+            if self.dry_run_mode:
+                params.append("--dry-run")
+
+            stdout, stderr, returncode = self._run_command(params)
+
+            if returncode == 0:
+                return ActionResult("publish", stdout or "Completed successfully", True)
+            else:
+                logging.error(stderr)
+                return ActionResult("publish", f"Failed with return code {returncode}", False)
+        else:
+            return result
+
+    def update(self) -> ActionResult:
+        params = ["npm", "update"]
         if self.dry_run_mode:
             params.append("--dry-run")
 
         stdout, stderr, returncode = self._run_command(params)
 
         if returncode == 0:
-            return ActionResult("publish", stdout or "Completed successfully", True)
+            return ActionResult("install", stdout or "Completed successfully", True)
         else:
             logging.error(stderr)
-            return ActionResult("publish", f"Failed with return code {returncode}", False)
+            return ActionResult("install", f"Failed with return code {returncode}", False)
 
     def need_push(self):
         return len(self.commits_ahead) > 0
@@ -147,12 +178,24 @@ class Project:
     def need_fetch(self):
         return len(self.commits_behind) > 0
 
+    def pull(self):
+        try:
+            if self.commits_behind > 0:
+                if not self.commits_ahead:
+                    self.repo.git.pull(self.remote, self.branch)
+                else:
+                    return ActionResult("pull", "Cannot pull while your branch is ahead of remote", False)
+            else:
+                return ActionResult("pull", "Nothing to do", True)
+        except GitCommandError as e:
+            return ActionResult(action="pull", message=str(e), success=False)
+
     def commit(self, message: str) -> ActionResult:
 
         try:
             self.repo.git.add(".")
         except GitCommandError as e:
-            return ActionResult(action="staging", message=str(e), success=False)
+            return ActionResult(action="stage", message=str(e), success=False)
 
         try:
             if self.is_dirty():
@@ -181,10 +224,10 @@ class Project:
 
             self.repo.git.push(*params)
 
-            return ActionResult(action="pushed", message="Operation completed successfully", success=True)
+            return ActionResult(action="push", message="Operation completed successfully", success=True)
         except GitCommandError as e:
             logging.error(e.stderr)
-            return ActionResult(action="failed", message=e.stdout, success=False)
+            return ActionResult(action="push", message=e.stdout, success=False)
 
     def reset(self):
 
@@ -194,7 +237,7 @@ class Project:
             return ActionResult(action="reset", message="Operation completed successfully", success=True)
 
         except GitCommandError as e:
-            return ActionResult(action="failed", message=str(e), success=False)
+            return ActionResult(action="reset", message=str(e), success=False)
 
     def _run_command(self, command_array) -> (str, str):
         p = subprocess.Popen(command_array, cwd=self.root_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

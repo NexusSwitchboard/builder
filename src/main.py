@@ -5,7 +5,7 @@ from os import getcwd
 from munch import DefaultMunch
 from typing import List
 
-from src.project import ProjectManager, Project
+from src.project import ActionResult, ProjectManager, Project, ActionMessage
 
 
 @click.group()
@@ -47,9 +47,6 @@ def commit(ctx, msg):
     else:
         final_projects = ctx.obj.manager.get_projects()
 
-    click.echo(f'Staging and committing all projects')
-    click.echo(f'-----------')
-
     for proj in final_projects:
         click.echo(f'{proj.get_name()}:')
         result = proj.commit(msg)
@@ -65,11 +62,41 @@ def push(ctx):
     else:
         final_projects = ctx.obj.manager.get_projects()
 
-    click.echo(f'Pushing all projects to remote')
-    click.echo(f'-----------')
     for proj in final_projects:
         click.echo(f'{proj.get_name()}:')
         result = proj.push()
+        click.echo(repr(result))
+
+
+@cli.command()
+@click.pass_context
+def update(ctx):
+
+    final_projects = []
+    if ctx.obj.project:
+        final_projects.append(ctx.obj.project)
+    else:
+        final_projects = ctx.obj.manager.get_projects()
+
+    for proj in final_projects:
+        click.echo(f'{proj.get_name()}:')
+        result = proj.update()
+        click.echo(repr(result))
+
+
+@cli.command()
+@click.pass_context
+def publish(ctx):
+
+    final_projects = []
+    if ctx.obj.project:
+        final_projects.append(ctx.obj.project)
+    else:
+        final_projects = ctx.obj.manager.get_projects()
+
+    for proj in final_projects:
+        click.echo(f'{proj.get_name()}:')
+        result = proj.publish()
         click.echo(repr(result))
 
 
@@ -83,12 +110,46 @@ def version(ctx, version_type):
     else:
         final_projects = ctx.obj.manager.get_projects()
 
-    click.echo(f'Pushing all projects to remote')
-    click.echo(f'-----------')
     for proj in final_projects:
         result = proj.increment_version(version_type)
         click.echo(repr(result))
 
+
+@cli.command()
+@click.option("--msg", help="The commit message to use if a commit must be made")
+@click.pass_context
+def sync(ctx, msg):
+
+    final_projects: List[Project] = []
+    if ctx.obj.project:
+        final_projects.append(ctx.obj.project)
+    else:
+        final_projects = ctx.obj.manager.get_projects()
+
+    succeeded = 0
+    for proj in final_projects:
+
+        if proj.is_dirty():
+            click.echo(repr(ActionMessage("sync", "Committing local changes...")))
+            result = proj.commit(msg)
+            if not result.success:
+                continue
+
+        if proj.need_fetch():
+            click.echo(repr(ActionMessage("sync", "Pulling from remote...")))
+            result = proj.pull()
+            if not result.success:
+                continue
+
+        if proj.need_push():
+            click.echo(repr(ActionMessage("sync", "Pushing to remote...")))
+            result = proj.push()
+            if not result.success:
+                continue
+
+        succeeded += 1
+
+    click.echo(repr(ActionResult("sync", f"Completed sync with {succeeded} out of {len(final_projects)} succeeding", True)))
 
 @cli.command()
 @click.option("--version_type", type=click.Choice(["patch", "minor", "major"]), default="patch")
@@ -101,8 +162,6 @@ def deploy(ctx, version_type, commit_message):
     else:
         final_projects = ctx.obj.manager.get_projects()
 
-    click.echo(f'Deploying packages' + ("" if not ctx.obj.dry_run else "[Dry Run Mode]"))
-    click.echo(f'-----------')
     for proj in final_projects:
         click.echo(f'{proj.get_name()}:')
 
