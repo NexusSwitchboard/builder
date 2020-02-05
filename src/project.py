@@ -98,9 +98,12 @@ class Project:
             self.branch_valid = self.has_branch(self.branch)
             self.remote_valid = self.has_remote(self.remote)
 
-            if self.branch_valid and self.remote_valid:
-                self.commits_behind = [c for c in self.repo.iter_commits(f'{self.branch}..{self.remote}/{self.branch}')]
-                self.commits_ahead = [c for c in self.repo.iter_commits(f'{self.remote}/{self.branch}..{self.branch}')]
+            try:
+                if self.branch_valid and self.remote_valid:
+                    self.commits_behind = [c for c in self.repo.iter_commits(f'{self.branch}..{self.remote}/{self.branch}')]
+                    self.commits_ahead = [c for c in self.repo.iter_commits(f'{self.remote}/{self.branch}..{self.branch}')]
+            except GitCommandError as e:
+                click.echo(repr(ActionResult("load",f"Unable to load project {self.package_ob.name} because a git command {e.command} with error {e.stderr}", False)))
 
     def is_dirty(self) -> bool:
         return self.repo.is_dirty()
@@ -287,7 +290,6 @@ class Project:
             return ActionResult(action="reset", message=str(e), success=False)
 
     def _run_command(self, command_array) -> (str, str):
-        click.echo(os.environ['PATH'])
         p = subprocess.Popen(command_array, cwd=self.root_directory,
                              stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         stdout, stderr = p.communicate()

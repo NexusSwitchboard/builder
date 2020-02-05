@@ -51,6 +51,7 @@ def list_(ctx):
     for proj in final_projects:
         click.echo(f'{proj.get_name()} - v{proj.get_version()} -> {"Dirty" if proj.is_dirty() else "Clean"}, '
                    f'Behind Remote: {len(proj.commits_behind)}, Ahead of Remote: {len(proj.commits_ahead)}')
+        click.echo(f'{proj.}')
 
     if not len(final_projects):
         click.echo(repr(ActionMessage("list", "Unable to find any nexus projects")))
@@ -198,7 +199,7 @@ def link(ctx, to):
 @click.option("-t", "--version_type", type=click.Choice(["patch", "minor", "major"]), default="patch")
 @click.option("-m", "--msg", type=str)
 @click.pass_context
-def deploy(ctx, version_type, commit_message):
+def deploy(ctx, version_type, msg):
     final_projects: List[Project] = []
     if ctx.obj.project:
         final_projects.append(ctx.obj.project)
@@ -208,12 +209,12 @@ def deploy(ctx, version_type, commit_message):
     for proj in final_projects:
         click.echo(f'{proj.get_name()}:')
 
-        if proj.is_dirty() and not commit_message:
+        if proj.is_dirty() and not msg:
             click.echo(f'Skipped because there is uncommitted code and no commit message')
             continue
         elif proj.is_dirty():
             click.echo(f'[i] Uncommitted and staged changes.  Committing with given commit message...')
-            result = proj.commit(commit_message)
+            result = proj.commit(msg)
             click.echo(repr(result))
 
             if result.success:
