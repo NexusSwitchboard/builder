@@ -100,6 +100,7 @@ class Project:
 
             try:
                 if self.branch_valid and self.remote_valid:
+                    self.repo.git.fetch()
                     self.commits_behind = [c for c in self.repo.iter_commits(f'{self.branch}..{self.remote}/{self.branch}')]
                     self.commits_ahead = [c for c in self.repo.iter_commits(f'{self.remote}/{self.branch}..{self.branch}')]
             except GitCommandError as e:
@@ -201,16 +202,17 @@ class Project:
     def need_fetch(self):
         return len(self.commits_behind) > 0
 
-    def pull(self):
+    def pull(self) -> ActionResult:
         if not self.branch_valid:
             return ActionResult("pull", f"Unable to pull because branch {self.branch} could not be found", False)
         if not self.remote_valid:
             return ActionResult("pull", f"Unable to pull because remote {self.remote} could not be found", False)
 
         try:
-            if self.commits_behind > 0:
+            if len(self.commits_behind) > 0:
                 if not self.commits_ahead:
                     self.repo.git.pull(self.remote, self.branch)
+                    return ActionResult("pull", "Pull completed successfully", True)
                 else:
                     return ActionResult("pull", "Cannot pull while your branch is ahead of remote", False)
             else:

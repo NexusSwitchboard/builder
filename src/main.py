@@ -51,7 +51,6 @@ def list_(ctx):
     for proj in final_projects:
         click.echo(f'{proj.get_name()} - v{proj.get_version()} -> {"Dirty" if proj.is_dirty() else "Clean"}, '
                    f'Behind Remote: {len(proj.commits_behind)}, Ahead of Remote: {len(proj.commits_ahead)}')
-        click.echo(f'{proj.}')
 
     if not len(final_projects):
         click.echo(repr(ActionMessage("list", "Unable to find any nexus projects")))
@@ -134,7 +133,7 @@ def version(ctx, version_type):
 
 
 @cli.command()
-@click.option("m", "--msg", help="The commit message to use if a commit must be made")
+@click.option("-m", "--msg", help="The commit message to use if a commit must be made")
 @click.pass_context
 def sync(ctx, msg):
     final_projects: List[Project] = []
