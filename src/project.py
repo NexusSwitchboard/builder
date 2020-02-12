@@ -3,7 +3,7 @@ import os
 import subprocess
 import click
 from json import JSONDecodeError
-from typing import List, Set
+from typing import List, Set, Union
 
 import logging
 from munch import DefaultMunch
@@ -53,7 +53,7 @@ class Project:
         self.commits_ahead = []
         self.commits_behind = []
         self.dry_run_mode = dry_run_mode
-
+        self.remote_latest_version = None
         self._load_git_info()
 
     @staticmethod
@@ -86,6 +86,15 @@ class Project:
                 return Project(ob, root, dirs, files, remote=remote, branch=branch, dry_run_mode=dry_run)
 
         return None
+
+    def _get_local_version(self):
+        return self.package_ob.version
+
+    def needs_publish(self):
+        if semver.compare(self.remote_latest_version, self.local_version)
+
+    def _load_npm_info(self):
+        self.remote_latest_version = self._get_latest_version()
 
     def _load_git_info(self):
         assert self.root_directory
@@ -297,6 +306,18 @@ class Project:
         stdout, stderr = p.communicate()
         return stdout, stderr, p.returncode
 
+    def _get_remote_version(self) -> Union[str, None]:
+        if self.remote_latest_version:
+            return self.remote_latest_version
+
+        params = ["npm", "version", self.package_ob.name, "version"]
+
+        stdout, stderr, returncode = self._run_command(params)
+        if returncode == 0:
+            self.remote_latest_version = str(stdout)
+            return self.remote_latest_version
+        else:
+            return None
 
 class ProjectManager:
 
@@ -328,3 +349,4 @@ class ProjectManager:
     def find_by_name(self, name: str) -> Project:
         matching = [p for p in self.projects if p.get_name(without_scope=True) == name]
         return None if len(matching) == 0 else matching[0]
+

@@ -9,6 +9,7 @@ verify_ssl = true
 click = "*"
 munch = "*"
 gitpython = "*"
+semver = "*"
 
 [requires]
 python_version = "3.7"

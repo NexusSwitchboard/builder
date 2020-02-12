@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "765b3360d0b413603c646c4bd15e043cc242b2d30d095d1d450d868c64a7845d"
+            "sha256": "f08016404384eae01b92e9245092acf919e1094f065d8b1c3380449522e0f149"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -33,11 +33,11 @@
         },
         "gitpython": {
             "hashes": [
-                "sha256:9c2398ffc3dcb3c40b27324b316f08a4f93ad646d5a6328cafbb871aa79f5e42",
-                "sha256:c155c6a2653593ccb300462f6ef533583a913e17857cfef8fc617c246b6dc245"
+                "sha256:99c77677f31f255e130f3fed4c8e0eebb35f1a09df98ff965fff6774f71688cf",
+                "sha256:99cd0403cecd8a13b95d2e045b9fcaa7837137fcc5ec3105f2c413305d82c143"
             ],
             "index": "pypi",
-            "version": "==3.0.5"
+            "version": "==3.0.7"
         },
         "munch": {
             "hashes": [
@@ -46,6 +46,14 @@
             ],
             "index": "pypi",
             "version": "==2.5.0"
+        },
+        "semver": {
+            "hashes": [
+                "sha256:aa1c6be3bf23e346e00c509a7ee87735a7e0fd6b404cf066037cfeab2c770320",
+                "sha256:ed1edeaa0c27f68feb74f09f715077fd07b728446dc2bb7fc470fc0f737873a0"
+            ],
+            "index": "pypi",
+            "version": "==2.9.0"
         },
         "six": {
             "hashes": [

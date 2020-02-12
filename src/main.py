@@ -49,8 +49,11 @@ def list_(ctx):
         final_projects = ctx.obj.manager.get_projects()
 
     for proj in final_projects:
-        click.echo(f'{proj.get_name()} - v{proj.get_version()} -> {"Dirty" if proj.is_dirty() else "Clean"}, '
-                   f'Behind Remote: {len(proj.commits_behind)}, Ahead of Remote: {len(proj.commits_ahead)}')
+        click.echo(f'{proj.get_name()} v{proj.get_version()}'
+                   f'Local uncommitted changes: {"Dirty" if proj.is_dirty() else "Clean"}\n'
+                   f'Behind Remote: {len(proj.commits_behind)}, Ahead of Remote: {len(proj.commits_ahead)}\n'
+                   f'Latest published version: ${proj.remote_latest_version}'
+                   f'Are there changes that need to be published? ${"Yes" if proj.needs_publish() else "No"}')
 
     if not len(final_projects):
         click.echo(repr(ActionMessage("list", "Unable to find any nexus projects")))
