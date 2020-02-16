@@ -9,7 +9,7 @@ import logging
 from munch import DefaultMunch
 from git import Repo, GitCommandError
 
-keywords: Set[str] = {"nexus-module", "nexus-connection"}
+keywords: Set[str] = {"nexus-module", "nexus-connection", "nexus-app"}
 names: List[str] = ["nexus-core", "nexus-extend"]
 
 
