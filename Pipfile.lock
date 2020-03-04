@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "765b3360d0b413603c646c4bd15e043cc242b2d30d095d1d450d868c64a7845d"
+            "sha256": "f08016404384eae01b92e9245092acf919e1094f065d8b1c3380449522e0f149"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -24,20 +24,20 @@
             "index": "pypi",
             "version": "==7.0"
         },
-        "gitdb2": {
+        "gitdb": {
             "hashes": [
-                "sha256:1b6df1433567a51a4a9c1a5a0de977aa351a405cc56d7d35f3388bad1f630350",
-                "sha256:96bbb507d765a7f51eb802554a9cfe194a174582f772e0d89f4e87288c288b7b"
+                "sha256:284a6a4554f954d6e737cddcff946404393e030b76a282c6640df8efd6b3da5e",
+                "sha256:598e0096bb3175a0aab3a0b5aedaa18a9a25c6707e0eca0695ba1a0baf1b2150"
             ],
-            "version": "==2.0.6"
+            "version": "==4.0.2"
         },
         "gitpython": {
             "hashes": [
-                "sha256:9c2398ffc3dcb3c40b27324b316f08a4f93ad646d5a6328cafbb871aa79f5e42",
-                "sha256:c155c6a2653593ccb300462f6ef533583a913e17857cfef8fc617c246b6dc245"
+                "sha256:43da89427bdf18bf07f1164c6d415750693b4d50e28fc9b68de706245147b9dd",
+                "sha256:e426c3b587bd58c482f0b7fe6145ff4ac7ae6c82673fc656f489719abca6f4cb"
             ],
             "index": "pypi",
-            "version": "==3.0.5"
+            "version": "==3.1.0"
         },
         "munch": {
             "hashes": [
@@ -47,6 +47,14 @@
             "index": "pypi",
             "version": "==2.5.0"
         },
+        "semver": {
+            "hashes": [
+                "sha256:095c3cba6d5433f21451101463b22cf831fe6996fcc8a603407fd8bea54f116b",
+                "sha256:723be40c74b6468861e0e3dbb80a41fc3b171a2a45bf956c245304773dc06055"
+            ],
+            "index": "pypi",
+            "version": "==2.9.1"
+        },
         "six": {
             "hashes": [
                 "sha256:236bdbdce46e6e6a3d61a337c0f8b763ca1e8717c03b369e87a7ec7ce1319c0a",
@@ -54,12 +62,12 @@
             ],
             "version": "==1.14.0"
         },
-        "smmap2": {
+        "smmap": {
             "hashes": [
-                "sha256:0555a7bf4df71d1ef4218e4807bbf9b201f910174e6e08af2e138d4e517b4dde",
-                "sha256:29a9ffa0497e7f2be94ca0ed1ca1aa3cd4cf25a1f6b4f5f87f74b46ed91d609a"
+                "sha256:171484fe62793e3626c8b05dd752eb2ca01854b0c55a1efc0dc4210fccb65446",
+                "sha256:5fead614cf2de17ee0707a8c6a5f2aa5a2fc6c698c70993ba42f515485ffda78"
             ],
-            "version": "==2.0.5"
+            "version": "==3.0.1"
         }
     },
     "develop": {}
